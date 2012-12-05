@@ -53,6 +53,10 @@ class FtpDocument extends FileDocument {
 		return $this->ftp->fput($file, $temp, FTP_BINARY);
 	}
 	
+	public function size($path) {
+		return $this->ftp->size($path);
+	}
+	
 	public function list_document(){
 		$path = $this->path();
 		

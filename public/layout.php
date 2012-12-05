@@ -208,33 +208,7 @@ function new_resource(info, callback) {
 	});
 }
 
-function changeOffset ($dom, offset) { 
-	offset = parseInt(offset) || App.MinOffset;
-	
-	if (offset > App.MaxOffset) offset = App.MaxOffset;
-	if (offset < App.MinOffset) offset = App.MinOffset;
-	
-	$dom.removeClass(function(index, css){
-    	var matches = css.match(/offset\d*/g) || [];
-    	return matches.join(' ');   
-    })
-    
-    if (offset > 0) $dom.addClass('offset'+ offset).data('offset', offset);
-};
 
-function changeSpan($dom, span) { 
-	span = parseInt(span) || App.MaxSpan;
-	
-	if (span > App.MaxSpan) span = App.MaxSpan;
-	if (span < App.MinSpan) span = App.MinSpan;
-	
-	$dom.removeClass(function(index, css){
-    	var matches = css.match(/span\d*/g) || [];
-    	return matches.join(' ');   
-    });
-    
-    if (span > 0) $dom.addClass("span" + span).data('span', span);
-};
 
 function setResourceEvent ($dom) {
     var resizableReset = function(e, ui) { 
@@ -437,102 +411,16 @@ $(function(){
 		keyMap(e);
 	})
 	
-	
-        		
-	var dropbox = $(".layout-main");
-	
-	dropbox.filedrop({
-		paramname: 'data',
-		maxfiles: 100,
-		maxfilesize: 100,
-		url: "/proc.php",
-		data: {
-			cmd : 'create resource',
-			path : $("#path").val()
-		},
-		
-		uploadFinished: function(i, file, response) {
-			$(".layout-main").css('background', 'none');
-			
-			new_resource({ span : 12, offset : 0, id : response.result.id, path : $("#path").val() });
-		},
-		
-		dragOver: function(e) {
-			$(".layout-main").css('background', '#eee');
-		},
-		
-		dragLeave: function(e) {
-			$(".layout-main").css('background', 'none');
-		},
-		
-		drop : function(e) {
-			
-			if (e.dataTransfer.effectAllowed == 'move' && e.dataTransfer.getData("application/json")) {
-      	
-      			new_resource(JSON.parse(e.dataTransfer.getData("application/json")), function(){
-      				$(".layout-main").css('background', 'none');
-      			});      			
-      			return false; 
-      		}			
-			
-			// progressbar popup
-			open_popup("#progressbar_popup", function($dom){
-        		$dom.find('.all .progress .bar').width("0%");				
-				$dom.find('.file .progress .bar').width("0%");
-				$dom.find('.file .file-name').html("");
-			})			
-		},
-		
-		error: function(err, e) {
-			
-			if (e.dataTransfer.effectAllowed == 'move' && e.dataTransfer.getData("application/json")) {
-				return; 	
-			}
-			
-			close_popup("#progressbar_popup");			 
-			switch(err) {
-				case "BrowserNotSupported":
-					alert("브라우저에서 지원안해요. ");
-					break;
-				case "TooManyFiles":
-					alert("너무 많은 파일을 올리셨군요. 한번에 5개까지만 올려주세요.");
-					break;
-				case "FileToLarge":
-					alert("파일이 너무 커요. 흐규흐규");
-					break;
-				default:
-					break;
-			}	
-
-		},
-		
-		beforeEach: function(file) {
-
-			
-		},
-		
-		uploadStarted: function(i, file, len) { 
-			var $dom = $("#progressbar_popup"); 
-			$dom.find('.progress .bar').width("0%");
-			$dom.find('.file-name').html(file.name);
-		},
-		
-		afterAll : function() { 
-			setTimeout(function() { close_popup("#progressbar_popup"); }, 1000);
-		},
-		
-		globalProgressUpdated: function(progress) {
-        	var $dom = $("#progressbar_popup");
-        	$dom.find('.all .progress .bar').width(progress + "%");
-    	},		
-		
-		progressUpdated: function(i, file, progress) {
-			var $dom = $("#progressbar_popup"); 
-			$dom.find('.file .progress .bar').width(progress + "%");
-			$dom.find('.file .file-name').html(file.name);
-		}
+	set_upload_component(".layout-main", {
+		cmd : 'create resource',
+		path : $("#path").val()
+	}, function(i, file, response){
+		new_resource({ span : 12, offset : 0, id : response.result.id, path : $("#path").val() });
+	}, function(e){
+		new_resource(JSON.parse(e.dataTransfer.getData("application/json")), function(){
+      		$(".layout-main").css('background', 'none');
+      	}); 
 	})
-	
 	
 
 })

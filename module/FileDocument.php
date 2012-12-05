@@ -349,17 +349,20 @@ class FileDocument implements IDocument {
 		return trim(str_replace(array('?'), array('-'), $title));
 	}
 	
+	public function size($path) {
+		return filesize($path);
+	}
+	
 	// output resource 
 	public function output($id) {
 		$path = $this->path($this->get_resource($id));
 		
 		$obj =  $this->get($path);
+		header("Content-length: ".$this->size($path));
+		//header('Content-Disposition: attachment; filename="'. $this->changeAsFileName($obj->title) . "." . $obj->ext . '"');
+		header("Content-type: ".$obj->mime);
 
-		header("Content-length: ".filesize($path));
-		header('Content-Disposition: attachment; filename="'. $this->changeAsFileName($obj->title) . "." . $obj->ext . '"');
-		header("Content-type: application/octet-stream");
-
-		readfile($path);
+		print $this->read($path);
 	}
 	
 }

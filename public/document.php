@@ -46,8 +46,13 @@ $list = $storage->list_document();
 <ul class="thumbnails">
 	<?php foreach ($list['resource'] as $resource) { ?>
 	<li class="span2">
-		<a href="javascript:editor_resource('<?php echo $resource->path ?>', '<?php echo $resource->id?>')" class='thumbnail' style='text-align: center' rel="tooltip" title="<?php echo $resource->title ?>" data-type="resource">
+		<a href="#<?php echo $document_root ?><?php echo $resource->id.".resource" ?>" class='thumbnail' style='text-align: center' rel="tooltip" title="<?php echo $resource->title ?>" data-type="resource">
+
+			<?php if (strstr($resource->mime, 'image')) { ?>
+			<img src="<?php echo $document_root ?><?php echo $resource->id.".resource" ?>"/>				 
+			<?php } else { ?>
 			<img src="/lib/image/<?php echo $resource->ext ?>.png" width="68"/>
+			<?php } ?>
 			
 			<div class="caption" data-obj='<?php echo json_encode($resource) ?>'>
 				<?php echo $resource->title ?>
@@ -108,7 +113,7 @@ $list = $storage->list_document();
 				
 				clearInterval(get_result_time);
 				
-				var template = '<li class="span3"><a href="#" class="thumbnail" style="text-align: center"><img width="128" height="128"/></a><div class="caption" style="padding-top:2px;"></div></li>';
+				var template = '<li class="span2"><a href="#" class="thumbnail" style="text-align: center"><img width="128" height="128"/></a><div class="caption" style="padding-top:2px;"></div></li>';
 				
 				var item = $(template);
 				
@@ -132,6 +137,28 @@ $list = $storage->list_document();
 
 			
 			<script>
+			
+			function add_resource_view(obj) {
+				
+				var $a = $("<a />").attr({
+						'data-type' : 'resource',
+						title : obj.title,
+						rel : 'tooltip',
+						href : obj.path + "/" + obj.id + ".resource"
+					}).addClass('thumbnail').css({
+						'text-align' : 'center'
+					})
+					
+					if (obj.mime.indexOf("image") > -1) {
+						$a.append($("<img />").attr('src' , obj.path + "/" + obj.id + ".resource"));
+					} else {
+						$a.append($("<img />").attr('src' , "/lib/image/"+ obj.ext + ".png"));
+					}
+				
+					$a.append($("<div class='caption' />").data('obj', obj).append(obj.title))
+				
+				$(".resource-view .thumbnails").prepend($("<li  class='span2' />").append( $a));
+			}
         
         	$(function(){
         		$(".layout-btn").click(function(e){
@@ -225,123 +252,18 @@ $list = $storage->list_document();
         		})
         		
 
-        		
-        		
-        		var dropbox = $(".resource-view");
-        		
-        		dropbox.filedrop({
-        			paramname: 'data',
-        			maxfiles: 5,
-        			maxfilesize: 2,
-        			url: "/proc.php",
-        			data: {
-        				cmd : 'create resource',
-        				path : $("#path").val()
-        			},
-        			uploadFinished: function(i, file, response) {
-            				var href = $("#document_root").val() + response.result.id + "." + response.resource.ext + ".resource";
-    						$.data(file).find('a').attr("href", href );
-    						
-    						$.data(file).find(".caption").data('obj', JSON.stringify(response.result));
-						
-						$(".resource-view").css('background', 'none');
-        			},
-        			
-        			dragOver: function(e) {
-        				$(".resource-view").css('background', '#eee');
-        			},
-        			
-        			dragLeave: function(e) {
-        				$(".resource-view").css('background', 'none');
-        			},
-        			
-					drop : function(e) {
-						
-						if (e.dataTransfer.effectAllowed == 'move' && e.dataTransfer.getData("application/json")) {
-			      	
-			      			var obj = JSON.parse(e.dataTransfer.getData("application/json"));
-			      			$.post("/proc.php", { cmd: 'copy resource', resource : obj, path : $("#path").val() }, function(response) {
-			      				console.log(response);
-			      			})
-
-			      			return false; 
-			      		}			
-						
-					},        			
-        			
-					error: function(err, e) {
-						
-						if (e.dataTransfer.effectAllowed == 'move' && e.dataTransfer.getData("application/json")) {
-							return; 	
-						}
-        				switch(err) {
-        					case "BrowserNotSupported":
-        						alert("브라우저에서 지원안해요. ");
-        						break;
-        					case "TooManyFiles":
-        						alert("너무 많은 파일을 올리셨군요. 한번에 5개까지만 올려주세요.");
-        						break;
-        					case "FileToLarge":
-        						alert("파일이 너무 커요. 흐규흐규");
-        						break;
-        					default:
-        						break;
-        				}	
-        			},
-        			
-        			beforeEach: function(file) {
-
-						
-        			},
-        			
-        			uploadStarted: function(i, file, len) { 
-        				createImage(file);	
-        			},
-        			
-        			progressUpdated: function(i, file, progress) {
-        				var $dom = $.data(file) 
-        				$dom.find('.progress .bar').width(progress + "%");
-        				$dom.find('.progress .title').html(file.name);
-        				
-        				$dom.find('img').attr('src', "/lib/image/" + file.name.split(".").pop() + ".png");
-        				
-        				if (progress == 100) {
-        					setTimeout(function() { $dom.find(".caption").text($dom.find(".progress").text()); $dom.find(".progress").remove(); }, 500);
-        				}
-	
-        			}
-        		})
-        		
-				var template = '<li class="span3"><a href="#" class="thumbnail" style="text-align: center"><img width="128" height="128"/></a><div class="caption" ><div class="progress"><div style="position: absolute;z-index: 99999;color: white;text-align: center;width: 220px;" class="title"></div><div class="bar" style="width:0%"></div></div></div></li>'; 
+				set_upload_component(".resource-view", {
+    				cmd : 'create resource',
+    				path : $("#path").val()
+				}, function(i, file, response){
+					add_resource_view(response.result);
+				}, function(e){
+					var obj = JSON.parse(e.dataTransfer.getData("application/json"));
+	      			$.post("/proc.php", { cmd: 'copy resource', resource : obj, path : $("#path").val() }, function(response) {
+	      				add_resource_view(response.result);
+	      			})
+				})
 				
-				function createImage(file){
-			
-					var preview = $(template),
-						image = $('img', preview);
-			
-					var reader = new FileReader();
-			
-					reader.onload = function(e){
-			
-						// e.target.result holds the DataURL which
-						// can be used as a source of the image:
-			
-						image.attr('src',e.target.result);
-					};
-			
-					// Reading the file as a DataURL. When finished,
-					// this will trigger the onload function above:
-					reader.readAsDataURL(file);
-
-					preview.prependTo(dropbox.find("ul.thumbnails"));
-			
-					// Associating a preview container
-					// with the file, using jQuery's $.data():
-			
-					$.data(file,preview);
-				}        	        		
-        		
-        		
         		$('ul.thumbnails').on("click", ".thumbnail .caption", function(e){
         			
         			e.preventDefault();
@@ -393,8 +315,16 @@ $list = $storage->list_document();
         			
         		}).on('dblclick', '.thumbnail', function(e) {
         			e.preventDefault();
+        			var $a = $(e.currentTarget);
+        			var href = $a.attr('href');
         			
-        			location.href = $(e.currentTarget).attr('href').split("#")[1];
+        			var obj = $a.find(".caption").data('obj');
+        			
+        			if ($a.attr('data-type') == 'resource') {
+        				editor_resource(obj.path, obj.id);
+        			} else { 
+        				location.href = href.split("#")[1];
+        			}
         			
         			return false; 
         		})
