@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <title>EasyLogic</title>
+        <meta http-equiv="X-UA-Compatible" content="IE-EmulateIE8">
+        <!--[if lt IE 9]><script src="/lib/html5.js">   </script><![endif]-->
+        <link rel="stylesheet" href="/lib/jquery.ui/smoothness/jquery-ui-1.8.20.custom.css">
+        <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/lib/bootstrap-toggle-buttons/static/stylesheets/bootstrap-toggle-buttons.css">
+        <link id="userThemes" rel="stylesheet" href="/logic/themes/theme1/1.css">
+        <link rel="stylesheet" href="/lib/google-code-prettify/prettify.css">
+                
+        <script type="text/javascript" src="/lib/json2.js"></script>
+        <script type="text/javascript" src="/lib/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript" src="/lib/jquery.ui/jquery-ui-1.8.20.custom.min.js"></script>
+        <script type="text/javascript" src="/lib/jquery.ui/jquery.ui.touch-punch.min.js"></script>
+        <script type="text/javascript" src="/lib/bootstrap-toggle-buttons/static/js/jquery.toggle.buttons.js"></script>
+        <script type="text/javascript" src="/lib/underscore-min.js"></script>
+        <script type="text/javascript" src="/lib/backbone-min.js"></script>
+        <script type="text/javascript" src="/lib/require-2.0.js"></script>
+        <!-- script type="text/javascript" src="/logic/main-built.js"></script -->
+        
+
+        <script type="text/javascript" src="/lib/beautify-html.js"></script>
+        <script type="text/javascript" src="/lib/jquery.bPopup.min.js"></script>
+        <script type="text/javascript" src="/lib/markdown.js"></script>
+        <script type="text/javascript" src="/lib/tiny_mce/jquery.tinymce.js"></script>
+        <script type="text/javascript" src="/lib/less-1.3.0.min.js"></script>
+        <script type="text/javascript" src="/lib/google-code-prettify/prettify.js"></script>
+        <script type="text/javascript">
+            require.config({
+                paths : {
+                    'jade' : '/lib/requirejs.plugin/jade-0.25',
+                    'text' : '/lib/requirejs.plugin/text',
+                    'jadeRuntime' : '/lib/requirejs.plugin/jadeRuntime'
+                }
+            });
+
+            // global object
+            var App = {
+                mode : 'write'
+            };
+
+        </script>
+        <script type="text/javascript" src="/lib/ace/ace.js"></script>        
+        <link rel="stylesheet" href="/logic/main.css">        
+                
+    </head>
+    <body>
+        <div class="container">
+            <div class="navbar navbar-fixed-top">
+                <div class="navbar-inner">
+                    <div style="height:50px;" class="container">
+                        <a data-toggle="collapse" data-target="#main-collapse" class="btn btn-navbar">
+                            <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+                        </a>
+                        <a href="/" style="padding:0px;" class="brand"> 
+                            <img src="/logic/themes/gear.png" style="display:inline-block;margin-top:-4px;margin-right:10px;">
+                            <h2 style="display:inline;padding-top:3px;padding-left:5px;padding-right:5px;">EasyLogic</h2>
+                        </a>
+                        <div id="main-collapse" class="nav-collapse">
+                            <ul class="nav">
+                                <li class="divider-vertical"></li>
+                                <li id="menubox" class="menubox btn-toolbar"></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container wrapper" id="main"> </div>
+        <footer class="footer">
+            <div class="container">
+                <div style="height:10px;"></div>
+                <ul class="unstyled">
+                    <li class="copyright">
+                        &copy; 2012 easylogic.co.kr
+                    </li>
+                </ul>
+            </div>
+        </footer>
+        
+        <script type="text/javascript" src="/lib/bootstrap/js/bootstrap.min.js"></script>
+        <script type="text/javascript">
+            require([ 'logic/main' ], function (Logic) {
+                Logic.initialize();
+            });
+        </script>
+       
+    </body>
+</html>
