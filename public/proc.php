@@ -4,8 +4,11 @@ session_start();
 
 include_once '../module/Storage.php';
 
-
-$storageId = Storage::getCurrentStorage();
+if ($_REQUEST['storageId']){
+	$storageId = $_REQUEST['storageId'];
+} else {
+	$storageId = Storage::getCurrentStorage();
+}
 
 if ($storageId) {
 	$path = $_REQUEST['path'];	

@@ -7,6 +7,7 @@ include_once "Resource.php";
 class FileDocument implements IDocument {
 	protected $_root;
 	protected $_path;
+	protected $_storageId;
 	
 	public function __construct($root = '', $path = '') {
 		$this->_root = realpath(getcwd().DIRECTORY_SEPARATOR.$root);
@@ -15,6 +16,10 @@ class FileDocument implements IDocument {
 	
 	public function setPath($path) {
 		$this->_path = $path;
+	}
+	
+	public function setStorageId($storageId){
+		$this->_storageId = $storageId;
 	}
 	
 	public static function urlencode($path) {
@@ -97,7 +102,7 @@ class FileDocument implements IDocument {
 		return $path;
 	}
 	
-	protected function get_document($dir) {
+	public function get_document($dir) {
 		return $dir.DIRECTORY_SEPARATOR."document";
 	}
 	
@@ -113,6 +118,7 @@ class FileDocument implements IDocument {
 			'type' => 'document',
 			'title' => $title,
 			'id' => uniqid(),
+			'storageId' => $this->_storageId,
 			'create' => time()
 		);
 		
@@ -127,7 +133,7 @@ class FileDocument implements IDocument {
 		return $ret;
 	}
 	
-	protected function get_layout($layout) {
+	public function get_layout($layout) {
 		return $layout.".layout";
 	}
 	
@@ -139,6 +145,7 @@ class FileDocument implements IDocument {
 			'title' => trim($title),
 			'id' => uniqid(),
 			'create' => time(),
+			'storageId' => $this->_storageId,			
 			'list' => array()
 		);
 				
@@ -241,11 +248,11 @@ class FileDocument implements IDocument {
 	
 	public function copy_resource($obj) {
 		 $obj = (object)$obj;
-		 $path = $this->real($obj->path, $this->get_resource($obj->id));
+		 $remote = Storage::load($obj->storageId, $obj->path);
 		 
-		 $data = $this->get($path);
+		 $path = $remote->path($remote->get_resource($obj->id));
 		 
-		 $content = $this->read($path);
+		 $content = $remote->read($path);
 		 
 		$json_arr = array(
 			'path' => $this->_path,			
@@ -255,6 +262,7 @@ class FileDocument implements IDocument {
 			'ext' => $obj->ext,
 			'mime' => $obj->mime,
 			'id' => uniqid(),
+			'storageId' => $this->_storageId,			
 			'create' => time()
 		);
 		
@@ -303,6 +311,7 @@ class FileDocument implements IDocument {
 				'ext' => $ext,
 				'mime' => $mime,
 				'id' => $filename,
+				'storageId' => $this->_storageId,				
 				'create' => time()
 			);
 			
@@ -315,7 +324,7 @@ class FileDocument implements IDocument {
 		return $ret; 
 	}
 	
-	protected function get_resource($path) {
+	public function get_resource($path) {
 		return $path.".resource";
 	}
 	
@@ -329,6 +338,8 @@ class FileDocument implements IDocument {
 	}
 
 	public function change_title($type, $title, $id) {
+		$type = Resource::getType($type);
+		
 		if ($type == 'document') {
 			$path = $this->path($this->get_document($id));
 		} else if ($type == 'resource') {

@@ -12,12 +12,14 @@ class Storage {
 		$obj = json_decode(file_get_contents($filename));
 		
 		if ($obj->type == 'file') {
-			return new FileDocument($obj->root, $path);
+			$storage = new FileDocument($obj->root, $path);
 		} else if ($obj->type == 'ftp') {
-			return new FtpDocument($obj->host, $obj->port, $obj->root, $path, $obj->username, $obj->password);
+			$storage = new FtpDocument($obj->host, $obj->port, $obj->root, $path, $obj->username, $obj->password);
 		}
 		
-		return null;
+		$storage->setStorageId($id);
+		
+		return $storage;
 	}
 	
 	public static function setCurrentStorage($id) {

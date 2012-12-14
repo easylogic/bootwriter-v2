@@ -4,6 +4,25 @@
 	<h1><?php echo $doc->title; ?></h1>
 </div>
 <div class="row layout-main"></div>
+<div class="row toy-maker">
+	
+</div>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'bootwritev2'; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
 
 <div class="hide" id="select_resource_popup">
 	<div class="modal">
@@ -23,6 +42,7 @@
 
 <script type="text/javascript">
 var layout_id = "<?php echo $doc->id ?>";
+var layout_storage_id  = "<?php echo $doc->storageId ?>";
 var layout_list = JSON.parse('<?php echo json_encode($doc->list) ?>');
 function save_layout() { 
 	
@@ -34,117 +54,33 @@ function save_layout() {
 			span : $dom.data('span'),
 			offset: $dom.data('offset'),
 			id : $dom.data('info').id,
-			path : $dom.data('info').path
+			path : $dom.data('info').path,
+			storageId : $dom.data('info').storageId,
+			style : $dom.data('style')
 		})
 	})
+	
+	console.log($temp);
 	
 	$.post('/proc.php',
 	{
 		cmd: 'update layout',
 		path : $("#path").val(),
+		storageId : layout_storage_id ,
 		id : layout_id,
 		list : $temp
 	}, function(ret){
 		if (ret.result == "ok") {
 			alert("성공적으로 저장했어요.");
-			location.reload();
+			//location.reload();
 		}
 	})
-}
-
-function loadResource(path){
-	$.get(
-		"/proc.php",
-		{
-			cmd: "list document",
-			path: path
-		},function(response){
-			var list = response.result;
-			var tree = $(".resource_tree");
-			tree.data('path', path);
-			tree.empty();
-	
-			if (path != ".") {
-				tree.append(
-					$("<li class='span2' />").append(
-						$("<a  href='#' class='thumbnail'  rel='tooltip'  style='text-align: center;background:#eee;'/>").append(
-							$("<i class='icon-chevron-left pull-left' />").after("...")
-						).css('cursor', 'pointer').attr('title', '..').click(function(e){
-							var arr = path.split("/");
-							
-							arr.pop();
-							
-							loadResource(arr.join("/"))
-						}).append(
-							$("<div class='media-body' />").append(
-								$("<h4 class='media-heading' />").html("Parent..")
-							)
-						)
-					)
-				)				
-			}		
-
-			tree.append($("<li class='span6 active' />").html("Documents"))
-			
-			for(var i = 0; i < list.directory.length; i++){
-				tree.append(
-					$("<li class='span2' />").append(
-						$("<a  href='#' class='thumbnail'  rel='tooltip'   style='text-align: center;background:#eee;'/>").attr('title', list.directory[i].title).append(
-							$("<img src='/lib/image/_page.png' />")
-						).append(
-							$("<div class='caption' />").html(list.directory[i].title)
-						).css('cursor', 'pointer').data("info", list.directory[i]).click(function(e){
-							loadResource(path + "/" + $(this).data('info').id)
-						})
-					)
-				)
-			}
-			
-			tree.append($("<li class='span6 active' />").html("Layouts"))			
-			
-			for(var i = 0; i < list.layout.length; i++){
-				if (list.layout[i].id == layout_id) continue;
-				if (!list.layout[i].id) continue;
-				
-				var $a = $("<a  href='#'  class='thumbnail'   rel='tooltip'  style='text-align: center;background:#eee;'/>").attr('title', list.layout[i].title);
-				
-				$a.append($("<img src='/lib/image/_page.png' />")).append(list.layout[i].title)
-								
-				tree.append(
-					$("<li class='span2' />").append($a)
-				)
-			}
-			
-			tree.append($("<li class='span6 active' />").html("Resources"))						
-			
-			for(var i = 0; i < list.resource.length; i++){
-				tree.append(
-					$("<li class='span2' />").append(
-						$("<a href='#' class='thumbnail'  rel='tooltip'  style='text-align: center;background:#eee;'/>").attr('title', list.resource[i].title).append(
-							$("<img src='/lib/image/" + list.resource[i].ext + ".png'/>") 
-						).append(
-							$("<div class='caption' />").append(
-								list.resource[i].title
-							)
-						).data('info', list.resource[i]).click(function(e){
-							var info = $(this).data('info');
-							
-							new_resource({ span : 12, offset : 0, id : info.id, path : info.path }, function(){
-								close_popup('#select_resource_popup')		
-							});
-						})
-					)
-				)
-			}
-			
-			$("a[rel=tooltip]", tree).tooltip();
-		}
-	)
-}
+} 
 
 function loadData($dom, callback) { 
 	
-	var params = { cmd : 'info resource', path : $dom.data('info').path, id : $dom.data('info').id};
+	var info = $dom.data('info');
+	var params = { cmd : 'info resource', path : info.path, id : info.id, storageId : info.storageId};
 
 	$.get('/proc.php', params, function(ret) {
 		var resource = ret.result;
@@ -156,11 +92,15 @@ function loadData($dom, callback) {
 		if ($dom.find(".toy").length) {
 			$dom.find(".toy").html(data);	
 		} else {
-			$dom.prepend($("<div class='toy' />").html(data));
+			$dom.prepend($("<div class='toy box' />").html(data));
 		}
 		
 		if (callback) callback();
 	})	
+}
+
+function get_resource_path(obj) {
+	return "/" + obj.storageId + "@" + obj.path + "/" + obj.id + ".resource";
 }
 
 function convertTo(resource) { 
@@ -177,14 +117,16 @@ function convertTo(resource) {
 			data = "<pre class='prettyprint linenums'>" + data + "</pre>";
 		} else { 
 			if (resource.mime && resource.mime.indexOf("image") > -1) {
-				data = "<img src='" + resource.path + "/" + resource.id + ".resource' />"
+				data = "<img src='" + get_resource_path(resource) + "' />"
 			}
 		}
 		
 		return data; 	
 }
 
-function new_resource(info, callback) {
+function new_resource(info, callback, $prev, isSelect) {
+	
+	isSelect = isSelect || false;
 	
 	if ($(".drop-blank").length) {
 		$(".drop-blank").remove();
@@ -192,19 +134,27 @@ function new_resource(info, callback) {
 
 	var $dom = $("<div />").data('info', info).data('resource', info.id).data({
 		span : parseInt(info.span || App.MaxSpan),
-		offset : parseInt(info.offset || App.MinOffset)
+		offset : parseInt(info.offset || App.MinOffset),
+		style : info.style || {} 
 	})
 
-	$(".layout-main").append($dom);
+	if ($prev) {
+		$prev.after($dom);
+	} else {
+		$(".layout-main").append($dom);	
+	}
+	
 	
 	loadData($dom, function(){
 		setResourceEvent($dom);
 		changeSpan($dom, $dom.data('span'));
 		changeOffset($dom, $dom.data('offset'));
 		
+		apply_style($dom.find(".toy"), $dom.data('style'));
+		
 		if (callback) callback();
 		
-		select($dom);		
+		if (isSelect) select($dom);		
 	});
 }
 
@@ -311,7 +261,7 @@ function setResourceEvent ($dom) {
     		} else {
     			new_resource(resource, function(){
     				close_resource_popup(resource.type);
-    			});
+    			}, $dom, true);
     		}
     		
     	});
@@ -325,12 +275,7 @@ function keyMap (e) {
     }      
  }
 
-function select($dom) {
-	$(".select").removeClass('select')
-	$dom.addClass("select");
-	
-	scroll($dom);
-}
+
 
 $(function(){
 	
@@ -360,6 +305,20 @@ $(function(){
 		var $dom = $(e.currentTarget);
 
 		 select($dom)
+		 
+		 $('#config-tab a[href="#config-background"]').tab('show');
+
+         var css = $dom.parent().data('style') || {};
+         
+
+        $(".config .config-form .control-group label").each(function(i, elem){
+            var $input = $(elem).find("input,select");
+            
+            var id = $input.attr('id').replace("style-", "");
+            
+            $input.val(css[id] || '');
+        })
+		 
 	});
 		
 		
@@ -383,21 +342,13 @@ $(function(){
 								$dom.bPopup().close();
 
 								open_resource_popup(path, ext, null, function(info){
-									new_resource({ span : 12, offset : 0, id : info.id, path : path }, function(){
+									new_resource({ span : 12, offset : 0, id : info.id, path : path, storageId : info.storageId }, function(){
 										close_resource_popup(info.type)		
-									});
+									}, null, true);
 								});
 								
 						})
     			})   
-		})
-	)
-	
-	$("#menubox3").append(
-		$("<a href='#' />").html("<i class='icon-folder-open' />").append(" Choose").click(function(e){
-			open_popup('#select_resource_popup', function($dom){
-				loadResource($("#path").val());
-			}) 
 		})
 	)
 	
@@ -415,13 +366,129 @@ $(function(){
 		cmd : 'create resource',
 		path : $("#path").val()
 	}, function(i, file, response){
-		new_resource({ span : 12, offset : 0, id : response.result.id, path : $("#path").val() });
+		new_resource({ span : 12, offset : 0, id : response.result.id, path : $("#path").val(), storageId : response.result.storageId });
 	}, function(e){
 		new_resource(JSON.parse(e.dataTransfer.getData("application/json")), function(){
       		$(".layout-main").css('background', 'none');
-      	}); 
+      	}, null, true); 
 	})
 	
+    $(".config .splitter").css('cursor', 'pointer').click(function(e){
+        if (parseInt($(".config").css('right')) == 0) {  // close 
+            $(".config").animate({
+                'right' : '-244px'
+            }, 200, function() {
+                $(".container").each(function(index, elem) {
+                    $(elem).css({
+                        'margin-right' : 'auto'
+                    })
+                })
+            });
+
+            $(".config .splitter i").removeClass("open icon-chevron-right").addClass("icon-chevron-left").addClass("close");
+        } else {        // open 
+
+            if (!$(".layout-main .select").length) return;
+
+            
+            $(".container").each(function(index, elem) {
+                if (parseInt($(elem).css('margin-right')) < 270) {
+                    $(elem).animate({
+                        'margin-right' : '270px'
+                    }, 100)
+                }
+            })
+
+            $(".config").animate({
+                'right' : '0px'
+            }, 200);
+
+            $(".config .splitter i").removeClass("close icon-chevron-left").addClass("icon-chevron-right").addClass("open");
+            
+            if ($(".manager .splitter .open").length && $(window).width() < 1400) {
+                $(".manager .splitter").click();
+            }
+
+        }
+    })
+    
+    function changeStyle(e) { 
+        var css = $(this).attr('id').replace("style-", "");
+        console.log(css);
+        var $select = $(".layout-main .select");
+        var $parent = $select.parent();
+        // set data 
+        var style = $parent.data('style') || {};
+        
+        style[css] = $(this).val();    
+        
+        $parent.data('style', style);
+        
+        // apply css
+        apply_style($select, style);       
+    }
+    
+    
+    
+    $(".config-form .main-config label input.editor").on('keyup', changeStyle).on('change', changeStyle);
+    $(".config-form .main-config label select.editor").on('change', changeStyle);
+    var $label = $(".config-form .main-config label");
+    $label.find("a.btn").click(function(e){
+    	var $a = $(e.currentTarget);
+    	var $dom = $(e.currentTarget).parent().parent();
+    	var id = $dom.attr('for').replace("style-", "")
+    	
+    	if ($a.find("i").hasClass("icon-chevron-right") ) { 	// open 
+    		$a.find("i").removeClass("icon-chevron-right").addClass("icon-chevron-down")
+    		$('#config-' + id).show();
+    		
+    		var obj = expand_style(id, $a.parent().find("input").val());
+    		
+    		console.log(obj);
+    		
+    		$("#config-" + id).find(".editor").each(function(idx, elem) {
+    			var $e = $(elem);
+    			var key = $e.attr('id').split("_");
+    			$e.val(obj[key[2]]);
+    		})
+    		
+    	} else { 												// close 
+    		$a.find("i").removeClass("icon-chevron-down").addClass("icon-chevron-right")
+    		$('#config-' + id).hide();
+        }
+    	
+    })
+    
+    $('#config-tab').tab();
+    
+    function collectStyle(e) {
+    	var $config = $(e.currentTarget).parent().parent().parent().parent();
+    	
+    	var id = $config.attr('id').replace("config-", "");
+    	
+    	var obj = {};
+    	$config.find("input,select").each(function(i, elem){
+    		console.log(elem);
+    		var subid = $(elem).attr('id').split("_");
+    		obj[subid[2]] = $(elem).val();
+    	})
+    	
+    	var value = collect_style(id, obj)
+    	
+    	console.log('value', value);
+    	
+    	$("#style-" + id).val(value).change(); 
+    }
+    
+    $(".config-form .sub-config label input.editor").on('keyup', collectStyle).on('change', collectStyle);
+    $(".config-form .sub-config label select.editor").on('change', collectStyle);
+    
+    $(".config-form .colors").miniColors({
+    	letterCase: 'lowercase',
+    	change: function(hex, rgb) {
+			$(this).change();
+    	}
+    })
 
 })
 

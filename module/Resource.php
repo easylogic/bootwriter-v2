@@ -216,7 +216,7 @@ class Resource {
 	
 	public static function getType($ext) {
 		$ext = strtolower($ext);		
-		return self::$types[$ext] ? self::$types[$ext] : $ext; 
+		return self::$types[$ext] ? self::$types[$ext] : 'resource'; 
 	}
 	
 	public static function getMime($ext) {

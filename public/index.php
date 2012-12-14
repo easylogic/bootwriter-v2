@@ -4,10 +4,21 @@ session_start();
 
 include_once "../module/Storage.php";
 
-$storageId = Storage::getCurrentStorage();
+
+if (strstr($_SERVER['PATH_INFO'], "@")){
+	$arr = explode("@", $_SERVER['PATH_INFO']);
+	$storageId = str_replace("/", "", $arr[0]);
+	$path = ".".str_replace($storageId."@", "", $_SERVER['PATH_INFO']);
+	
+} else {
+	$storageId = Storage::getCurrentStorage();
+	$path = ".".$_SERVER['PATH_INFO'];	
+}
+
+
+
 
 if ($storageId) {
-	$path = ".".$_SERVER['PATH_INFO'];
 	
 	$arr = explode("/", $path);
 	$file = array_pop($arr);
@@ -55,9 +66,9 @@ if ($storageId) {
 	
 	
 	if ($path == '.'){
-		$document_root = "/";
+		$document_root = "/".$storageId."@";
 	} else {
-		$document_root = "/".$path."/";	
+		$document_root = "/".$storageId."@".$path."/";	
 	}
 	
 	if ($type == 'resource') {
@@ -78,29 +89,14 @@ if ($storageId) {
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE-EmulateIE8">
         <!--[if lt IE 9]><script src="/lib/html5.js">   </script><![endif]-->
+        
         <link rel="stylesheet" href="/lib/jquery.ui/smoothness/jquery-ui-1.8.20.custom.css">
         <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css">
-        <!--link rel="stylesheet" href="/lib/bootstrap-toggle-buttons/static/stylesheets/bootstrap-toggle-buttons.css"-->
-        
+        <link rel="stylesheet" href="/logic/main.css">
         <link rel="stylesheet" href="/lib/google-code-prettify/prettify.css">
+        <link rel="stylesheet" href="/lib/jquery-miniColors/jquery.miniColors.css">
                 
-        <script type="text/javascript" src="/lib/json2.js"></script>
-        <script type="text/javascript" src="/lib/jquery-1.7.1.min.js"></script>
-        <script type="text/javascript" src="/lib/jquery.ui/jquery-ui-1.8.20.custom.min.js"></script>
-        <script type="text/javascript" src="/lib/jquery.ui/jquery.ui.touch-punch.min.js"></script>
-        <!--script type="text/javascript" src="/lib/bootstrap-toggle-buttons/static/js/jquery.toggle.buttons.js"></script-->
-        <!-- script type="text/javascript" src="/lib/underscore-min.js"></script -->
-        <!-- script type="text/javascript" src="/lib/backbone-min.js"></script -->
-        <!-- script type="text/javascript" src="/lib/require-2.0.js"></script -->
-        <!-- script type="text/javascript" src="/logic/main-built.js"></script -->
-        
 
-        <!--script type="text/javascript" src="/lib/beautify-html.js"></script-->
-        <script type="text/javascript" src="/lib/jquery.bPopup.min.js"></script>
-        <script type="text/javascript" src="/lib/markdown.js"></script>
-        <script type="text/javascript" src="/lib/tiny_mce/jquery.tinymce.js"></script>
-        <!--script type="text/javascript" src="/lib/less-1.3.0.min.js"></script-->
-        <script type="text/javascript" src="/lib/google-code-prettify/prettify.js"></script>
         <script type="text/javascript">
         		/*
             require.config({
@@ -127,13 +123,12 @@ if ($storageId) {
     </head>
     <body>
     	
-		<script type="text/javascript" src="/lib/ace/ace.js"></script>        
-		<link rel="stylesheet" href="/logic/main.css">              
-		<script type="text/javascript" src="http://feather.aviary.com/js/feather.js"></script>
-		<script type="text/javascript" src="/logic/main.js"></script>    	
+        <script type="text/javascript" src="/lib/json2.js"></script>
+        <script type="text/javascript" src="/lib/jquery-1.7.1.min.js"></script>
     	
     	<input type="hidden" id="path" value="<?php echo $path ?>" />
     	<input type="hidden" id="document_root" value="<?php echo $document_root ?>" />
+    	<input type="hidden" id="storageId" value="<?php echo $storageId ?>" />
         <div class="container">
             <div class="navbar">
                 <div class="navbar-inner">
@@ -308,8 +303,11 @@ if ($storageId) {
 	    <h3>
 	    	Markdown
 		    <div class="pull-right">
-		  		<button type="button" class="download" title="Download"><i class='icon-download'></i></button>
-		  		<button type="button" class="close-popup" data-dismiss="modal" aria-hidden="true"><i class='icon-remove'></i></button>		  			    	    	
+		    	<div class='btn-group'>
+		    		<button type="button" class="btn preview" title="Preview"><i class='icon-zoom-in'></i></button>
+			  		<button type="button" class="btn download" title="Download"><i class='icon-download'></i></button>
+			  		<button type="button" class="btn close-popup" data-dismiss="modal" aria-hidden="true"><i class='icon-remove'></i></button>
+		    	</div>
 		    </div>
 	    	
 	    </h3>
@@ -317,7 +315,10 @@ if ($storageId) {
 	  </div>
 	  <div class="modal-body">
 	    <input type="text" class="input-block-level title" placeholder="Input Title"/>
-	    
+	    <div>
+	        <div class="editor"></div>
+	        <div class="preview" style="display:none;height:300px;overflow:auto"></div>
+	    </div>
 	    
 	  </div>
 	  <div class="modal-footer">
@@ -520,9 +521,9 @@ if ($storageId) {
 <div class="manager">
 	
 	<div class="tree">
-			<div class='menu clearfix'>
+			<div class='menu'>
 
-				<div class='well'>
+				<div class='box'>
 					<select id="storage" style="width:170px;margin-bottom: 0px">
 						<option>Select Storage</option>
 					</select>
@@ -533,9 +534,566 @@ if ($storageId) {
 			</div>
 	</div>
 	<div class="splitter">
-		<i class="icon-white icon-chevron-right" style="position: absolute;top:50%;"></i>
+		<i class="icon-chevron-right" style="position: absolute;top:50%;"></i>
 	</div>
 </div>
+
+<?php if ($type == 'layout') { ?>
+<div class="config">
+    
+    <div class="splitter">
+        <i class="icon-chevron-left" style="position: absolute;top:50%;"></i>
+    </div>
+    
+    <div class="config-form">
+        <div class="config-info"></div>
+        <div class="config-attr">
+            
+        </div>
+
+
+        <ul class="nav nav-pills" id="config-tab">
+          <li class="active"><a href="#config-background" data-toggle='pill'>Back</a>
+          </li>
+          <li><a href="#config-border" data-toggle='pill'>Border</a></li>
+          <li><a href="#config-box" data-toggle='pill'>Box</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active box" id="config-background">
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-background-color">
+                     Color
+                     <div class='input-append pull-right'>
+                     	<input type="text" id="style-background-color" placeholder="#000000" class='editor colors'>	
+                     </div>
+                     
+                </label>
+              </div>
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-image">
+                    Image
+                    <div class='input-append pull-right'> 
+                    	<input type="text" id="style-background-image" placeholder="url(/image/test.jpg)" class='editor'>
+                    </div>
+                </label>
+              </div>
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-attachment">
+                    Attach
+                   <select class='editor pull-right' id="style-background-attachment">
+                       <option>scroll</option>
+                       <option>fixed</option>
+                       <option>inherits</option>
+                   </select>
+                </label>
+              </div>    
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-position">
+                    Position 
+                    <input type="text" id="style-background-position" placeholder="0% 0%" class='editor pull-right'>
+                </label>
+              </div>
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-repeat">
+                    Repeat 
+                   <select class='editor pull-right' id="style-background-repeat">
+                       <option>repeat</option>
+                       <option>repeat-x</option>
+                       <option>repeat-y</option>
+                       <option>no-repeat</option>
+                       <option>inherit</option>
+                   </select>
+                </label>
+              </div>
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-clip">
+                    Clip 
+                   <select class='editor pull-right' id="style-background-clip">
+                       <option>border-box</option>
+                       <option>content-box</option>
+                       <option>padding-box</option>
+                   </select>
+                </label>
+              </div>
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-background-origin">
+                    Origin 
+                   <select class='editor pull-right' id="style-background-origin">
+                       <option>border-box</option>
+                       <option>content-box</option>
+                       <option>padding-box</option>
+                   </select>
+                </label>
+              </div>
+              
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-background-size">
+                     Size
+                     <input type="text" id="style-background-size" placeholder="100% 100%" class='editor pull-right'>
+                     
+                </label>
+              </div>                                                                                                          
+            </div>
+
+            <div id="config-border" class="tab-pane box">
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-border-color">
+                     Color
+                     
+                       <div class="input-append pull-right">
+                            <input type="text" id="style-border-color" placeholder="#000000" class='editor'>
+                            <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                       </div>                                                
+                </label>
+                
+              </div>
+              
+	            <div id="config-border-color" style='display:none' class="sub-config">
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-color_border-top-color">
+	                        Top
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-color_border-top-color" placeholder="#000000" class='editor colors'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-color_border-right-color">
+	                        Right
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-color_border-right-color" placeholder="#000000" class='editor colors'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-color_border-bottom-color">
+	                        Bottom
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-color_border-bottom-color" placeholder="#000000" class='editor colors'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-color_border-left-color">
+	                        Left
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-color_border-left-color" placeholder="#000000" class='editor colors'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      
+	            </div>              
+              
+    
+              
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-border-width">
+                     Width
+                     
+                       <div class="input-append pull-right">
+                            <input type="text" id="style-border-width" placeholder="0px" class='editor'>
+                            <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                       </div>                           
+                </label>
+              </div>
+              
+	            <div id="config-border-width" style='display:none' class="sub-config">
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-width_border-top-width">
+	                        Top
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-width_border-top-width" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-width_border-right-width">
+	                        Right
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-width_border-right-width" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-width_border-bottom-width">
+	                        Bottom
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-width_border-bottom-width" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-width_border-left-width">
+	                        Left
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-width_border-left-width" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      
+	
+	            </div>              
+         
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-border-style">
+                    Style 
+                   <div class="input-append pull-right">
+                        <input type="text" id="style-border-style" placeholder="dashed" class='editor'>
+                        <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                   </div>                   
+                </label>
+              </div>
+              
+	            <div id="config-border-style" style='display:none' class="sub-config">
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-style_border-top-style">
+	                        Top
+	                       <div class='pull-right'>
+	                           <select class='editor' id="style_border-style_border-top-style">
+	                               <option>none</option>
+	                               <option>hidden</option>
+	                               <option>solid</option>
+	                               <option>dashed</option>
+	                               <option>dotted</option>
+	                               <option>double</option>
+	                               <option>groove</option>
+	                               <option>ridge</option>
+	                               <option>inset</option>
+	                               <option>outset</option>
+	                           </select>                           
+	                       </div>                                                          
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-style_border-right-style">
+	                        Right
+	                       <div class='pull-right'>
+	                           <select class='editor' id="style_border-style_border-right-style">
+	                               <option>none</option>
+	                               <option>hidden</option>
+	                               <option>solid</option>
+	                               <option>dashed</option>
+	                               <option>dotted</option>
+	                               <option>double</option>
+	                               <option>groove</option>
+	                               <option>ridge</option>
+	                               <option>inset</option>
+	                               <option>outset</option>
+	                           </select>            
+	                        </div>           
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-style_border-bottom-style">
+	                        Bottom
+	                       <div class='pull-right'>
+	                           <select class='editor' id="style_border-style_border-bottom-style">
+	                               <option>none</option>
+	                               <option>hidden</option>
+	                               <option>solid</option>
+	                               <option>dashed</option>
+	                               <option>dotted</option>
+	                               <option>double</option>
+	                               <option>groove</option>
+	                               <option>ridge</option>
+	                               <option>inset</option>
+	                               <option>outset</option>
+	                           </select>         
+	                       </div>
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-style_border-left-style">
+	                        Left
+	                       <div class='pull-right'>
+	                           <select class='editor'  id="style_border-style_border-left-style">
+	                               <option>none</option>
+	                               <option>hidden</option>
+	                               <option>solid</option>
+	                               <option>dashed</option>
+	                               <option>dotted</option>
+	                               <option>double</option>
+	                               <option>groove</option>
+	                               <option>ridge</option>
+	                               <option>inset</option>
+	                               <option>outset</option>
+	                           </select>        
+	                       </div>
+	                       
+	                    </label>                    
+	                </div>      
+	            </div>                   
+    
+             <div class="control-group main-config">
+                <label class="control-label" for="style-border-radius">
+                    Radius
+                   <div class="input-append pull-right">
+                        <input type="text" id="style-border-radius" placeholder="0px" class='editor'>
+                        <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                   </div>                                                               
+                   
+                </label>
+              </div>
+              
+	            <div id="config-border-radius" style='display:none' class="sub-config"> 
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-radius_border-top-radius">
+	                        Top
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-radius_border-top-radius" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-radius_border-right-radius">
+	                        Right
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-radius_border-right-radius" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-radius_border-bottom-radius">
+	                        Bottom
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-radius_border-bottom-radius" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_border-radius_border-left-radius">
+	                        Left
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_border-radius_border-left-radius" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      
+	            </div>                           
+                                  
+             </div>
+
+
+
+            <div id="config-box" class="tab-pane box">
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-padding">
+                     Padding
+                     
+                       <div class="input-append pull-right">
+                            <input type="text" id="style-padding" placeholder="0px" class='editor'>
+                            <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                       </div>                                          
+                </label>
+              </div>
+              
+	            <div id="config-padding" style='display:none' class="sub-config"> 
+	                <div class="control-group">
+	                    <label class="control-label" for="style_padding_padding-top">
+	                        Top
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_padding_padding-top" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_padding_padding-right">
+	                        Right
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_padding_padding-right" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_padding_padding-bottom">
+	                        Bottom
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_padding_padding-bottom" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_padding_padding-left">
+	                        Left
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_padding_padding-left" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      
+	            </div>                   
+             <div class="control-group main-config">
+                 <label class="control-label" for="style-margin">
+                     Margin
+                     
+                       <div class="input-append pull-right">
+                            <input type="text" id="style-margin" placeholder="0px" class='editor'>
+                            <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                       </div>                     
+                </label>
+              </div>
+	            <div id="config-margin" style='display:none' class="sub-config"> 
+	                <div class="control-group">
+	                    <label class="control-label" for="style_margin_margin-top">
+	                        Top
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_margin_margin-top" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_margin_margin-right">
+	                        Right
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_margin_margin-right" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_margin_margin-bottom">
+	                        Bottom
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_margin_margin-bottom" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_margin_margin-left">
+	                        Left
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_margin_margin-left" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      
+	            </div>                         
+             <div class="control-group main-config">
+                <label class="control-label" for="style-box-shadow">
+                    Shadow 
+
+                   <div class="input-append pull-right">
+                        <input type="text" id="style-box-shadow" placeholder="50px 50px 5px black" class='editor'>
+                        <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                   </div>
+                   
+                </label>
+              </div>
+              
+	            <div id="config-box-shadow" style='display:none' class="sub-config"> 
+	                <div class="control-group">
+	                    <label class="control-label" for="style_box-shadow_h-shadow">
+	                        H-Shadow
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_box-shadow_h-shadow" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_box-shadow_v-shadow">
+	                        V-Shadow
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_box-shadow_v-shadow" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style_box-shadow_blur">
+	                        Blur
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_box-shadow_blur" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                <div class="control-group">
+	                    <label class="control-label" for="style-box-shadow-spread">
+	                        Spread
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_box-shadow_spread" placeholder="0px" class='editor'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>
+	                
+	                <div class="control-group">
+	                    <label class="control-label" for="style-box-shadow-color">
+	                        Color
+	                       <div class="input-append pull-right">
+	                            <input type="text" id="style_box-shadow_color" placeholder="#000000" class='editor colors'>
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      	           
+	                
+	                <div class="control-group">
+	                    <label class="control-label" for="style_box-shadow_inset">
+	                        Inset
+	                       <div class="input-append pull-right">
+	                            <input type="checkbox" id="style_box-shadow_inset">
+	                       </div>                                                               
+	                       
+	                    </label>                    
+	                </div>      	                      
+	            </div>               
+              
+             <div class="control-group main-config">
+                <label class="control-label" for="style-transform">
+                    Transform
+                    
+                   <div class="input-append pull-right">
+                        <input type="text" id="style-transform" placeholder="scale(1.5, 0.5)" class='editor'>
+                        <a class="btn pull-right"><i class="icon-chevron-right"></i></a>
+                   </div>
+
+                </label>
+              </div>                                        
+            </div>
+
+            
+        </div>
+
+
+
+
+                
+    </div>
+</div>
+<?php } ?>
+
+        <script type="text/javascript" src="/lib/jquery.ui/jquery-ui-1.8.20.custom.min.js"></script>
+        <script type="text/javascript" src="/lib/jquery.ui/jquery.ui.touch-punch.min.js"></script>
+        <script type="text/javascript" src="/lib/jquery.bPopup.min.js"></script>
+        <script type="text/javascript" src="/lib/markdown.js"></script>
+        <script type="text/javascript" src="/lib/tiny_mce/jquery.tinymce.js"></script>
+        <script type="text/javascript" src="/lib/google-code-prettify/prettify.js"></script>
+		<script type="text/javascript" src="/lib/ace/ace.js"></script>        
+		<script type="text/javascript" src="http://feather.aviary.com/js/feather.js"></script>
+		<script type="text/javascript" src="/lib/jquery-miniColors/jquery.miniColors.min.js"></script>
+		<script type="text/javascript" src="/logic/main.js"></script>    	
 
     </body>
 </html>

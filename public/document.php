@@ -6,7 +6,34 @@ $list = $storage->list_document();
 
 <?php include_once "category.php" ?>
 
-<div class='page-header'>
+<div class='document-main thumbnail-view'>
+	
+
+<div class='page-header document'>
+	<h1>
+		Document
+		<div class='pull-right menu'>
+			<a href='#' class='btn btn-large document-btn'><i class='icon-plus'></i></a>
+		</div>  		      		      				
+	</h1>  		
+</div>
+
+<ul class="thumbnails document">
+	<?php foreach ($list['directory'] as $directory) { ?>
+	<li class="span2" style="text-align: center">
+		<a href="#<?php echo $document_root ?><?php echo $directory->id ?>" class='thumbnail box'  rel="tooltip" title="<?php echo $directory->title ?>" data-type="directory">
+			<img src="/lib/image/_page.png" width="96"/>
+			<div class="caption" data-obj='<?php echo json_encode($directory) ?>'>
+				<?php echo $directory->title ?>
+			</div>					
+		</a>
+	</li>
+	<?php } ?>
+	
+</ul>
+
+
+<div class='page-header layout'>
 	<h1>
 		Layouts <small> Layout & Slide </small>
 		<div class='pull-right menu'>
@@ -14,10 +41,10 @@ $list = $storage->list_document();
 		</div>  		      				
 	</h1>
 </div>
-<ul class="thumbnails">
+<ul class="thumbnails layout">
 	<?php foreach ($list['layout'] as $layout) { ?>
 	<li class="span2">
-		<a href="#<?php echo $document_root ?><?php echo $layout->id.".layout" ?>" class='thumbnail' style='text-align: center' rel="tooltip" title="<?php echo $layout->title ?>" data-type="layout">
+		<a href="#<?php echo $document_root ?><?php echo $layout->id.".layout" ?>" class='thumbnail box'rel="tooltip" title="<?php echo $layout->title ?>" data-type="layout">
 			<img src="http://placehold.it/300x200" />
 			<div class="caption" data-obj='<?php echo json_encode($layout) ?>'>
 				<?php echo $layout->title ?>
@@ -32,8 +59,7 @@ $list = $storage->list_document();
 
 <div class="resource-view">
 	
-
-<div class='page-header'>
+<div class='page-header resource'>
 	<h1>
 		Resources <small> Text, Html, MarkDown, Image, Movie, etc </small>
 		<div class='pull-right menu btn-group'>
@@ -43,19 +69,19 @@ $list = $storage->list_document();
 	</h1>  		
 </div>
 
-<ul class="thumbnails">
+<ul class="thumbnails resource">
 	<?php foreach ($list['resource'] as $resource) { ?>
 	<li class="span2">
-		<a href="#<?php echo $document_root ?><?php echo $resource->id.".resource" ?>" class='thumbnail' style='text-align: center' rel="tooltip" title="<?php echo $resource->title ?>" data-type="resource">
-
+		<a href="#<?php echo $document_root ?><?php echo $resource->id.".resource" ?>" class='thumbnail box' rel="tooltip" title="<?php echo $resource->title ?>" data-type="resource">
+			<div class='img' style="height:87px;position: relative;">
 			<?php if (strstr($resource->mime, 'image')) { ?>
-			<img src="<?php echo $document_root ?><?php echo $resource->id.".resource" ?>"/>				 
+			<img src="<?php echo $document_root ?><?php echo $resource->id.".resource" ?>" style='width:130px;height:87px;'/>				 
 			<?php } else { ?>
-			<img src="/lib/image/<?php echo $resource->ext ?>.png" width="68"/>
+			<img src="/lib/image/<?php echo $resource->ext ?>.png" width="68" style="position:absolute;top:25%;left:25%"/>
 			<?php } ?>
-			
+			</div>
 			<div class="caption" data-obj='<?php echo json_encode($resource) ?>'>
-				<?php echo $resource->title ?>
+				<?php echo $resource->title ?> 
 			</div>    			
 		</a>
 	</li>
@@ -63,30 +89,8 @@ $list = $storage->list_document();
 	
 </ul>
 </div>
-
-<div class='page-header'>
-	<h1>
-		Document
-		<div class='pull-right menu'>
-			<a href='#' class='btn btn-large document-btn'><i class='icon-plus'></i></a>
-		</div>  		      		      				
-	</h1>  		
-</div>
-
-<ul class="thumbnails">
-	<?php foreach ($list['directory'] as $directory) { ?>
-	<li class="span2" style="text-align: center">
-		<a href="#<?php echo $document_root ?><?php echo $directory->id ?>" class='thumbnail'  style='text-align: center' rel="tooltip" title="<?php echo $directory->title ?>" data-type="directory">
-			<img src="/lib/image/_page.png" width="96"/>
-			<div class="caption" data-obj='<?php echo json_encode($directory) ?>'>
-				<?php echo $directory->title ?>
-			</div>					
-		</a>
-	</li>
-	<?php } ?>
 	
-</ul>
-
+</div>
 
 
 <script>
@@ -113,7 +117,7 @@ $list = $storage->list_document();
 				
 				clearInterval(get_result_time);
 				
-				var template = '<li class="span2"><a href="#" class="thumbnail" style="text-align: center"><img width="128" height="128"/></a><div class="caption" style="padding-top:2px;"></div></li>';
+				var template = '<li class="span2"><a href="#" class="thumbnail box" style="text-align: center"><img width="128" height="128"/></a><div class="caption" style="padding-top:2px;"></div></li>';
 				
 				var item = $(template);
 				
@@ -138,26 +142,50 @@ $list = $storage->list_document();
 			
 			<script>
 			
-			function add_resource_view(obj) {
+			function add_resource_view(obj, $li) {
 				
 				var $a = $("<a />").attr({
 						'data-type' : 'resource',
 						title : obj.title,
 						rel : 'tooltip',
+						id : obj.id,
 						href : obj.path + "/" + obj.id + ".resource"
 					}).addClass('thumbnail').css({
 						'text-align' : 'center'
 					})
 					
+					var $div = $("<div class='img' />").css({
+						height: '87px',
+						position: 'relative'
+					})
+					
 					if (obj.mime.indexOf("image") > -1) {
-						$a.append($("<img />").attr('src' , obj.path + "/" + obj.id + ".resource"));
+						$div.append($("<img />").attr('src' , obj.path + "/" + obj.id + ".resource").css({
+							width: '130px',
+							height: '87px'
+						}));
 					} else {
-						$a.append($("<img />").attr('src' , "/lib/image/"+ obj.ext + ".png"));
+						$div.append($("<img />").attr('src' , "/lib/image/"+ obj.ext + ".png").css({
+							'width' : '68px',
+							position: 'absolute',
+							top: "25%",
+							left: "25%"
+						}));
 					}
 				
-					$a.append($("<div class='caption' />").data('obj', obj).append(obj.title))
+					$a.append($div).append($("<div class='caption' />").data('obj', obj).append(obj.title))
 				
-				$(".resource-view .thumbnails").prepend($("<li  class='span2' />").append( $a));
+				if ($li) {
+					$li.html($a);
+				} else {
+					$(".resource-view .thumbnails").prepend($("<li  class='span2' />").append( $a));	
+				}
+				
+			}
+			
+			function update_resource_view(obj) {
+				var $li = $(".resource-view .thumbnails a[id=" + obj.id +  "]").parent();
+				add_resource_view(obj, $li);
 			}
         
         	$(function(){
@@ -199,7 +227,10 @@ $list = $storage->list_document();
 									
 									$dom.bPopup().close();
 									
-									open_resource_popup($("#path").val(), ext);
+									open_resource_popup($("#path").val(), ext, function(result){
+										add_resource_view(result);
+										close_resource_popup(ext);
+									});
 									
 							})
         			})        			
@@ -254,13 +285,15 @@ $list = $storage->list_document();
 
 				set_upload_component(".resource-view", {
     				cmd : 'create resource',
-    				path : $("#path").val()
+    				path : $("#path").val(),
+    				storageId: $("#storageId").val()
 				}, function(i, file, response){
 					add_resource_view(response.result);
 				}, function(e){
 					var obj = JSON.parse(e.dataTransfer.getData("application/json"));
 	      			$.post("/proc.php", { cmd: 'copy resource', resource : obj, path : $("#path").val() }, function(response) {
 	      				add_resource_view(response.result);
+	      				
 	      			})
 				})
 				
@@ -288,6 +321,7 @@ $list = $storage->list_document();
 								var obj = {
 			        				cmd : 'change title',
 			        				path : $("#path").val(),
+			        				storageId : dataObj.storageId,
 			        				id : dataObj.id,
 			        				ext: dataObj.ext,
 			        				type: dataObj.type,
@@ -321,7 +355,10 @@ $list = $storage->list_document();
         			var obj = $a.find(".caption").data('obj');
         			
         			if ($a.attr('data-type') == 'resource') {
-        				editor_resource(obj.path, obj.id);
+        				editor_resource(obj.path, obj.id, function(result){
+        					add_resource_view(result, $a.parent());	
+        					close_resource_popup(obj.type);
+        				});
         			} else { 
         				location.href = href.split("#")[1];
         			}
@@ -331,6 +368,7 @@ $list = $storage->list_document();
         		        		
         		        		
         		$("a[rel=tooltip]").tooltip();
+        		
         	})
         	
         </script>
